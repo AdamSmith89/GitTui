@@ -1,5 +1,5 @@
-mod panes;
 mod app;
+mod panes;
 use app::App;
 
 fn main() {

@@ -1,5 +1,5 @@
-use tui::widgets::{Paragraph, Block, Borders};
 use crate::panes::pane::*;
+use tui::widgets::{Block, Borders, Paragraph};
 
 pub struct OutputView {
     area: Rect,

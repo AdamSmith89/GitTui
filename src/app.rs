@@ -1,10 +1,24 @@
-use std::{io::{Stdout, self}, time::Duration};
 use anyhow::Context;
-use crossterm::{terminal, cursor, event::{self, Event, KeyEvent, KeyCode}};
-use tui::{backend::CrosstermBackend, Terminal, layout::{Layout, Direction, Constraint, Rect}, widgets::{Paragraph, Block, Borders}};
+use crossterm::{
+    cursor,
+    event::{self, Event, KeyCode, KeyEvent},
+    terminal,
+};
+use std::{
+    io::{self, Stdout},
+    time::Duration,
+};
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    Terminal,
+};
 
-use crate::panes::{input_pane::InputView, output_pane::OutputView, status_pane::StatusView, library_pane::LibraryView};
 use super::panes::pane::Pane;
+use crate::panes::{
+    input_pane::InputView, library_pane::LibraryView, output_pane::OutputView,
+    status_pane::StatusView,
+};
 
 pub struct App {
     terminal: Terminal<CrosstermBackend<Stdout>>,
@@ -14,7 +28,8 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         App {
-            terminal: Terminal::new(CrosstermBackend::new(io::stdout())).expect("Failed to initialize terminal backend"),
+            terminal: Terminal::new(CrosstermBackend::new(io::stdout()))
+                .expect("Failed to initialize terminal backend"),
             panes: Vec::new(),
         }
     }
@@ -29,7 +44,8 @@ impl App {
             }
         }
 
-        self.teardown_terminal().context("Failed to teardown terminal")?;
+        self.teardown_terminal()
+            .context("Failed to teardown terminal")?;
 
         Ok(())
     }
@@ -37,10 +53,12 @@ impl App {
     fn tick(&mut self) -> bool {
         if crossterm::event::poll(Duration::from_millis(1000)).is_ok() {
             match event::read().expect("Failed to read event") {
-                Event::Key(KeyEvent { code: KeyCode::Esc, .. }) => return false,
+                Event::Key(KeyEvent {
+                    code: KeyCode::Esc, ..
+                }) => return false,
                 _ => (),
             }
-            
+
             // Todo: how to propagate error from here?
             let _ = self.terminal.draw(|frame| {
                 for pane in &self.panes {
@@ -48,7 +66,7 @@ impl App {
                 }
             });
         }
-        
+
         true
     }
 
@@ -59,10 +77,13 @@ impl App {
             terminal::EnterAlternateScreen,
             event::EnableMouseCapture,
             cursor::EnableBlinking
-        ).context("Failed to setup terminal backend")?;
-        
+        )
+        .context("Failed to setup terminal backend")?;
+
         self.terminal.clear().context("Failed to clear terminal")?;
-        self.terminal.hide_cursor().context("Failed to hide cursor")?;
+        self.terminal
+            .hide_cursor()
+            .context("Failed to hide cursor")?;
 
         Ok(())
     }
@@ -97,8 +118,11 @@ impl App {
             self.terminal.backend_mut(),
             terminal::LeaveAlternateScreen,
             event::DisableMouseCapture
-        ).context("Failed to reset terminal backend")?;
-        self.terminal.show_cursor().context("Failed to show cursor")?;
+        )
+        .context("Failed to reset terminal backend")?;
+        self.terminal
+            .show_cursor()
+            .context("Failed to show cursor")?;
 
         Ok(())
     }
