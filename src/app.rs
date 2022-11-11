@@ -1,11 +1,14 @@
 use std::{io::{Stdout, self}, time::Duration};
 use anyhow::Context;
 use crossterm::{terminal, cursor, event::{self, Event, KeyEvent, KeyCode}};
-use tui::{backend::CrosstermBackend, Terminal, layout::{Layout, Direction, Constraint, Rect}, terminal::CompletedFrame, widgets::{Paragraph, Block, Borders}};
+use tui::{backend::CrosstermBackend, Terminal, layout::{Layout, Direction, Constraint, Rect}, widgets::{Paragraph, Block, Borders}};
+
+use crate::panes::{input_pane::InputView, output_pane::OutputView, status_pane::StatusView, library_pane::LibraryView};
+use super::panes::pane::Pane;
 
 pub struct App {
     terminal: Terminal<CrosstermBackend<Stdout>>,
-    panes: Vec<Rect>,
+    panes: Vec<Box<dyn Pane>>,
 }
 
 impl App {
@@ -18,7 +21,7 @@ impl App {
 
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.setup_terminal().context("Failed to setup terminal")?;
-        self.setup_panes();
+        self.build_layout();
 
         loop {
             if !self.tick() {
@@ -41,15 +44,8 @@ impl App {
             // Todo: how to propagate error from here?
             let _ = self.terminal.draw(|frame| {
                 for pane in &self.panes {
-                    let widget = Paragraph::new(pane.area().to_string())
-                        .block(Block::default().title(pane.area().to_string()).borders(Borders::ALL));
-    
-                    frame.render_widget(widget, *pane);
+                    pane.draw(frame);
                 }
-                // output_pane.draw(frame);
-                // command_pane.draw(frame);
-                // status_pane.draw(frame);
-                // search_pane.draw(frame, &output_pane);
             });
         }
         
@@ -71,31 +67,28 @@ impl App {
         Ok(())
     }
 
-    fn setup_panes(&mut self) {
+    fn build_layout(&mut self) {
         let main_areas = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(self.terminal.get_frame().size());
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(self.terminal.get_frame().size());
         let left_area = main_areas[0];
         let right_area = main_areas[1];
 
-        let mut left_areas = Layout::default()
+        let left_areas = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(3), Constraint::Max(3)].as_ref())
             .split(left_area);
 
-        let mut right_areas = Layout::default()
+        let right_areas = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(right_area);
 
-        self.panes.append(&mut left_areas);
-        self.panes.append(&mut right_areas);
-
-        // let mut output_pane = OutputPane::new(left_areas[0]);
-        // let mut command_pane = CommandPane::new(left_areas[1]);
-        // let mut status_pane = StatusPane::new(right_areas[0]);
-        // let mut search_pane = SearchPane::new(right_areas[1]);
+        self.panes.push(Box::new(OutputView::new(left_areas[0])));
+        self.panes.push(Box::new(InputView::new(left_areas[1])));
+        self.panes.push(Box::new(StatusView::new(right_areas[0])));
+        self.panes.push(Box::new(LibraryView::new(right_areas[1])));
     }
 
     fn teardown_terminal(&mut self) -> anyhow::Result<()> {

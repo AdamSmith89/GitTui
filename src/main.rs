@@ -1,3 +1,4 @@
+mod panes;
 mod app;
 use app::App;
 
