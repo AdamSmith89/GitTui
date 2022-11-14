@@ -1,5 +1,6 @@
 mod app;
 mod panes;
+mod eventing;
 use app::App;
 
 fn main() {

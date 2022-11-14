@@ -20,16 +20,20 @@ use crate::panes::{
     status_pane::StatusView,
 };
 
-pub struct App {
+use crate::eventing::event_hub::*;
+
+pub struct App<'a> {
     terminal: Terminal<CrosstermBackend<Stdout>>,
+    event_hub: EventHub<'a>,
     panes: Vec<Box<dyn Pane>>,
 }
 
-impl App {
+impl<'a> App<'a> {
     pub fn new() -> Self {
         App {
             terminal: Terminal::new(CrosstermBackend::new(io::stdout()))
                 .expect("Failed to initialize terminal backend"),
+            event_hub: EventHub::new(),
             panes: Vec::new(),
         }
     }

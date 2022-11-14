@@ -1,4 +1,5 @@
 use crate::panes::pane::*;
+use crate::eventing::{events::Event, subscriber::Subscriber};
 use tui::widgets::{Block, Borders, Paragraph};
 
 pub struct InputView {
@@ -17,5 +18,21 @@ impl Pane for InputView {
             Paragraph::new("> ").block(Block::default().title("Input").borders(Borders::ALL));
 
         frame.render_widget(widget, self.area);
+    }
+}
+
+pub struct InputModel {
+
+}
+
+impl InputModel {
+    pub fn new() -> Self {
+        InputModel {}
+    }
+}
+
+impl Subscriber for InputModel {
+    fn callback(&self, event: &Event) {
+
     }
 }
