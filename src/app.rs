@@ -1,12 +1,12 @@
 use anyhow::Context;
 use crossterm::{
     cursor,
-    event::{self, Event, KeyCode, KeyEvent},
+    event::{self, KeyCode, KeyEvent},
     terminal,
 };
 use std::{
     io::{self, Stdout},
-    time::Duration,
+    time::Duration, rc::Rc, cell::RefCell,
 };
 use tui::{
     backend::CrosstermBackend,
@@ -15,20 +15,20 @@ use tui::{
 };
 
 use super::panes::pane::Pane;
-use crate::panes::{
-    input_pane::InputView, library_pane::LibraryView, output_pane::OutputView,
+use crate::{panes::{
+    input_pane::{InputModel, InputView, InputData}, library_pane::LibraryView, output_pane::{OutputModel, OutputView},
     status_pane::StatusView,
-};
+}, eventing::events::Event};
 
 use crate::eventing::event_hub::*;
 
-pub struct App<'a> {
+pub struct App {
     terminal: Terminal<CrosstermBackend<Stdout>>,
-    event_hub: EventHub<'a>,
+    event_hub: EventHub,
     panes: Vec<Box<dyn Pane>>,
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn new() -> Self {
         App {
             terminal: Terminal::new(CrosstermBackend::new(io::stdout()))
@@ -40,7 +40,7 @@ impl<'a> App<'a> {
 
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.setup_terminal().context("Failed to setup terminal")?;
-        self.build_layout();
+        self.setup_layout();
 
         loop {
             if !self.tick() {
@@ -57,9 +57,12 @@ impl<'a> App<'a> {
     fn tick(&mut self) -> bool {
         if crossterm::event::poll(Duration::from_millis(1000)).is_ok() {
             match event::read().expect("Failed to read event") {
-                Event::Key(KeyEvent {
+                crossterm::event::Event::Key(KeyEvent {
                     code: KeyCode::Esc, ..
-                }) => return false,
+                }) => return false, // Could be an Event::Exit?
+                crossterm::event::Event::Key(key_event) => {
+                    self.event_hub.publish(Event::KeyEvent(key_event))
+                },
                 _ => (),
             }
 
@@ -92,7 +95,7 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    fn build_layout(&mut self) {
+    fn setup_layout(&mut self) {
         let main_areas = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -110,10 +113,15 @@ impl<'a> App<'a> {
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(right_area);
 
+        let input_data = Rc::new(RefCell::new(InputData::new()));
+
         self.panes.push(Box::new(OutputView::new(left_areas[0])));
-        self.panes.push(Box::new(InputView::new(left_areas[1])));
+        self.panes.push(Box::new(InputView::new(input_data.clone(), left_areas[1])));
         self.panes.push(Box::new(StatusView::new(right_areas[0])));
         self.panes.push(Box::new(LibraryView::new(right_areas[1])));
+
+        self.event_hub.subscribe(Box::new(OutputModel::new()));
+        self.event_hub.subscribe(Box::new(InputModel::new(input_data)));
     }
 
     fn teardown_terminal(&mut self) -> anyhow::Result<()> {

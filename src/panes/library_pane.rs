@@ -1,4 +1,4 @@
-use crate::panes::pane::*;
+use crate::{panes::pane::*, eventing::{subscriber::Subscriber, events::Event}};
 use tui::widgets::{Block, Borders, Paragraph};
 
 pub struct LibraryView {
@@ -20,5 +20,21 @@ impl Pane for LibraryView {
         );
 
         frame.render_widget(widget, self.area);
+    }
+}
+
+pub struct LibraryModel {
+
+}
+
+impl LibraryModel {
+    pub fn new() -> Self {
+        LibraryModel {}
+    }
+}
+
+impl Subscriber for LibraryModel {
+    fn callback(&mut self, event: &Event) {
+
     }
 }

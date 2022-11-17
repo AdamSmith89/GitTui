@@ -1,4 +1,4 @@
-use crate::panes::pane::*;
+use crate::{panes::pane::*, eventing::{subscriber::Subscriber, events::Event}};
 use tui::widgets::{Block, Borders, Paragraph};
 
 pub struct OutputView {
@@ -17,5 +17,21 @@ impl Pane for OutputView {
             .block(Block::default().title("Output").borders(Borders::ALL));
 
         frame.render_widget(widget, self.area);
+    }
+}
+
+pub struct OutputModel {
+
+}
+
+impl OutputModel {
+    pub fn new() -> Self {
+        OutputModel {}
+    }
+}
+
+impl Subscriber for OutputModel {
+    fn callback(&mut self, event: &Event) {
+
     }
 }

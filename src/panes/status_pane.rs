@@ -1,4 +1,4 @@
-use crate::panes::pane::*;
+use crate::{panes::pane::*, eventing::{subscriber::Subscriber, events::Event}};
 use tui::widgets::{Block, Borders, Paragraph};
 
 pub struct StatusView {
@@ -17,5 +17,21 @@ impl Pane for StatusView {
             .block(Block::default().title("Status").borders(Borders::ALL));
 
         frame.render_widget(widget, self.area);
+    }
+}
+
+pub struct StatusModel {
+
+}
+
+impl StatusModel {
+    pub fn new() -> Self {
+        StatusModel {}
+    }
+}
+
+impl Subscriber for StatusModel {
+    fn callback(&mut self, event: &Event) {
+
     }
 }
